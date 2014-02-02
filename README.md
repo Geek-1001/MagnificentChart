@@ -8,7 +8,7 @@ Simple open source Android library for round charts.
 
 ###Step 1
 
-declair MagnificentChart in your xml layout
+declare MagnificentChart in your xml layout
 
 	<MagnificentChart
         android:layout_width="250dp"
