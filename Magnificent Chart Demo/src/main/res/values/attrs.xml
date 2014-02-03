@@ -6,6 +6,7 @@
         <attr name="animation" format="boolean"/>
         <attr name="round" format="boolean" />
         <attr name="shadow" format="boolean" />
+        <attr name="showTitle" format="boolean" />
         <attr name="shadowColor" format="color" />
         <attr name="background" format="color" />
     </declare-styleable>

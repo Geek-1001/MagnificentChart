@@ -1,10 +1,21 @@
 package com.hornet.magnificentchartdemo;
 
+import android.animation.Animator;
+import android.animation.FloatEvaluator;
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.CornerPathEffect;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PathDashPathEffect;
+import android.graphics.PathEffect;
+import android.graphics.PathMeasure;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.Typeface;
@@ -13,6 +24,7 @@ import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.LinearInterpolator;
 
 import java.util.List;
 
@@ -28,6 +40,7 @@ public class MagnificentChart extends View {
     // view properties
     private List<MagnificentChartItem> chartItemsList;
     private int maxValue;
+    private boolean isTitleShowing;
     private boolean isAnimated;
     private boolean isRound;
     private boolean isShadowShowing;
@@ -41,21 +54,22 @@ public class MagnificentChart extends View {
 
     // other
 
+
 // #MARK - Constructors
 
     public MagnificentChart(Context context) {
         super(context);
-        init(context, null, 0, false, false, true, Color.parseColor("#DDDDDD"), Color.parseColor("#FFFFFF"));
+        init(context, null, 0, false, false, true, false, Color.parseColor("#DDDDDD"), Color.parseColor("#FFFFFF"));
     }
 
     public MagnificentChart(Context context, List<MagnificentChartItem> itemsList, int maxValue){
         super(context);
-        init(context, itemsList, maxValue, false, false, true, Color.parseColor("#DDDDDD"), Color.parseColor("#FFFFFF"));
+        init(context, itemsList, maxValue, false, false, true, false, Color.parseColor("#DDDDDD"), Color.parseColor("#FFFFFF"));
     }
 
-    public MagnificentChart(Context context, List<MagnificentChartItem> itemsList, int maxValue, boolean isAnimated, boolean isRound, boolean showShadow){
+    public MagnificentChart(Context context, List<MagnificentChartItem> itemsList, int maxValue, boolean isAnimated, boolean isRound, boolean showShadow, boolean showTitle){
         super(context);
-        init(context, itemsList, maxValue, isAnimated, isRound, showShadow, Color.parseColor("#DDDDDD"), Color.parseColor("#FFFFFF"));
+        init(context, itemsList, maxValue, isAnimated, isRound, showShadow, showTitle, Color.parseColor("#DDDDDD"), Color.parseColor("#FFFFFF"));
     }
 
     public MagnificentChart(Context context, AttributeSet attrs) {
@@ -66,10 +80,11 @@ public class MagnificentChart extends View {
             boolean isAnimated = typedArray.getBoolean(R.styleable.MagnificentChart_animation, false);
             boolean isRound = typedArray.getBoolean(R.styleable.MagnificentChart_round, false);
             boolean showShadow = typedArray.getBoolean(R.styleable.MagnificentChart_shadow, true);
+            boolean showTitle = typedArray.getBoolean(R.styleable.MagnificentChart_showTitle, false);
             int shadowColor = typedArray.getColor(R.styleable.MagnificentChart_shadowColor, Color.parseColor("#F2F2F2"));
             int backgroundColor = typedArray.getColor(R.styleable.MagnificentChart_background, Color.parseColor("#FFFFFF"));
 
-            init(context, null, 0, isAnimated, isRound, showShadow, shadowColor, backgroundColor);
+            init(context, null, 0, isAnimated, isRound, showShadow, showTitle, shadowColor, backgroundColor);
         } finally {
             typedArray.recycle();
         }
@@ -79,6 +94,8 @@ public class MagnificentChart extends View {
 
     @Override
     protected void onDraw(Canvas canvas){
+        super.onDraw(canvas);
+
         if(width != height){
             return;
         }
@@ -139,7 +156,7 @@ public class MagnificentChart extends View {
 
 // #MARK - Custom methods
 
-    private void init(Context context, List<MagnificentChartItem> itemsList, int maxValue, boolean isAnimated, boolean isRound, boolean showShadow, int shadowColor, int backgroundColor){
+    private void init(Context context, List<MagnificentChartItem> itemsList, int maxValue, boolean isAnimated, boolean isRound, boolean showShadow, boolean showTitle, int shadowColor, int backgroundColor){
 
         this.context = context;
         this.chartItemsList = itemsList;
@@ -149,6 +166,7 @@ public class MagnificentChart extends View {
         this.shadowBackgroundColor = shadowColor;
         this.chartBackgroundColor = backgroundColor;
         this.maxValue = maxValue;
+        this.isTitleShowing = showTitle;
 
     }
 
@@ -197,34 +215,47 @@ public class MagnificentChart extends View {
 
     public void setAnimationState(boolean state){
         this.isAnimated = state;
+        invalidate();
     }
 
     public void setRound(boolean state){
         this.isRound = state;
+        invalidate();
     }
 
     public void setShadowShowingState(boolean state){
         this.isShadowShowing = state;
+        invalidate();
+    }
+
+    public void setTitleShowingState(boolean state){
+        this.isTitleShowing = state;
+        invalidate();
     }
 
     public void setTypeface(Typeface typeface){
         this.typeface = typeface;
+        invalidate();
     }
 
     public void setChartItemsList(List<MagnificentChartItem> itemsList){
         this.chartItemsList = itemsList;
+        invalidate();
     }
 
     public void setShadowBackgroundColor(int color){
         this.shadowBackgroundColor = color;
+        invalidate();
     }
 
     public void setChartBackgroundColor(int color){
         this.chartBackgroundColor = color;
+        invalidate();
     }
 
     public void setMaxValue(int maxValue){
         this.maxValue = maxValue;
+        invalidate();
     }
 
     private float getPercent(int value, int maxValue){
