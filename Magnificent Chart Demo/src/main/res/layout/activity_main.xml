@@ -6,6 +6,70 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
+    <HorizontalScrollView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top">
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="top" >
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="animation"
+                android:onClick="onClick"
+                android:id="@+id/animationButton" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="round"
+                android:onClick="onClick"
+                android:id="@+id/roundButton" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="shadow"
+                android:onClick="onClick"
+                android:id="@+id/shadowButton" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="animation speed default"
+                android:onClick="onClick"
+                android:id="@+id/animationSpeedDefault" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="animation speed slow"
+                android:onClick="onClick"
+                android:id="@+id/animationSpeedSlow" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="animation speed fast"
+                android:onClick="onClick"
+                android:id="@+id/animationSpeedFast" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="animation speed normal"
+                android:onClick="onClick"
+                android:id="@+id/animationSpeedNormal" />
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
     <com.hornet.magnificentchartdemo.MagnificentChart
         android:layout_width="250dp"
         android:layout_height="250dp"
@@ -17,7 +81,6 @@
         app:shadowColor="#F2F2F2"
         app:background="#fff"
         android:id="@+id/magnificentChart" />
-
 
 </FrameLayout>
 

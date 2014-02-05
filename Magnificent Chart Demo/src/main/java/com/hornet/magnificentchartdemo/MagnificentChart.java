@@ -1,21 +1,11 @@
 package com.hornet.magnificentchartdemo;
 
-import android.animation.Animator;
-import android.animation.FloatEvaluator;
-import android.animation.ObjectAnimator;
-import android.animation.PropertyValuesHolder;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.CornerPathEffect;
-import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PathDashPathEffect;
-import android.graphics.PathEffect;
-import android.graphics.PathMeasure;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.Typeface;
@@ -24,7 +14,6 @@ import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.animation.LinearInterpolator;
 
 import java.util.List;
 
@@ -36,6 +25,10 @@ public class MagnificentChart extends View {
 // #MARK - Constants
 
     // default initialization params
+    public static final float ANIMATION_SPEED_DEFAULT = 6.5f;
+    public static final float ANIMATION_SPEED_SLOW = 1.0f;
+    public static final float ANIMATION_SPEED_FAST = 10.0f;
+    public static final float ANIMATION_SPEED_NORMAL = 3.5f;
 
     // view properties
     private List<MagnificentChartItem> chartItemsList;
@@ -48,11 +41,12 @@ public class MagnificentChart extends View {
     private int chartBackgroundColor;
     private Context context;
     private Typeface typeface = null;
-
     private int width;
     private int height;
+    private float animationSpeed = 6.5f;
 
-    // other
+    private float globalCurrentAngle = 0.0f;
+
 
 
 // #MARK - Constructors
@@ -95,52 +89,18 @@ public class MagnificentChart extends View {
     @Override
     protected void onDraw(Canvas canvas){
         super.onDraw(canvas);
-
+        canvas.save();
         if(width != height){
             return;
         }
-        Paint insideShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        insideShadowPaint.setColor(this.shadowBackgroundColor);
-        if(this.isShadowShowing){
-            canvas.drawCircle(width/2, height/2, width/2, insideShadowPaint);
-        }
-        Paint insideChartPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        insideChartPaint.setColor(this.chartBackgroundColor);
-        RectF rect = new RectF();
-        rect.set(10, 10, width - 10, height - 10);
-        canvas.drawArc(rect, 0f, 0f + 360, true, insideChartPaint);
-        canvas.rotate(-90f, rect.centerX(), rect.centerY());
 
-        float startAngle = 0f;
-        float anglesSum = 0f;
-
-        if(this.chartItemsList != null){
-            Paint currentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            for(int i = 0; i < chartItemsList.size(); ++i){
-                MagnificentChartItem currentItem = chartItemsList.get(i);
-                int color = currentItem.color;
-                String title = currentItem.title;
-                int value = currentItem.value;
-                float currentPercentValue = getPercent(value, this.maxValue);
-                float currentAngle = currentPercentValue * 360;
-                anglesSum += currentAngle;
-
-                if(anglesSum != 360 && anglesSum < 360){
-                    currentPaint.setColor(color);
-                    canvas.drawArc(rect, startAngle, currentAngle, true, currentPaint);
-                    startAngle += currentAngle;
-                }
-            }
-
-            if(!this.isRound){
-                canvas.rotate(90f, rect.centerX(), rect.centerY());
-                if(this.isShadowShowing){
-                    canvas.drawCircle(width/2, height/2, width/4 - 10, insideShadowPaint);
-                }
-                canvas.drawCircle(width/2, height/2, width/4 - 20, insideChartPaint);
-            }
+        if(this.isAnimated){
+            animatedDraw(canvas);
+        } else {
+            regularDraw(canvas);
         }
 
+        canvas.restore();
     }
 
     @Override
@@ -157,7 +117,6 @@ public class MagnificentChart extends View {
 // #MARK - Custom methods
 
     private void init(Context context, List<MagnificentChartItem> itemsList, int maxValue, boolean isAnimated, boolean isRound, boolean showShadow, boolean showTitle, int shadowColor, int backgroundColor){
-
         this.context = context;
         this.chartItemsList = itemsList;
         this.isAnimated = isAnimated;
@@ -167,7 +126,6 @@ public class MagnificentChart extends View {
         this.chartBackgroundColor = backgroundColor;
         this.maxValue = maxValue;
         this.isTitleShowing = showTitle;
-
     }
 
     private int measureWidth(int widthMeasureSpec){
@@ -218,6 +176,15 @@ public class MagnificentChart extends View {
         invalidate();
     }
 
+    public void setAnimationSpeed(float animationSpeed){ // use just value ANIMATION_SPEED_... from current class
+        if(animationSpeed == ANIMATION_SPEED_DEFAULT || animationSpeed == ANIMATION_SPEED_SLOW || animationSpeed == ANIMATION_SPEED_FAST || animationSpeed == ANIMATION_SPEED_NORMAL){
+            this.animationSpeed = animationSpeed;
+        } else {
+            this.animationSpeed = ANIMATION_SPEED_DEFAULT;
+        }
+        invalidate();
+    }
+
     public void setRound(boolean state){
         this.isRound = state;
         invalidate();
@@ -226,6 +193,18 @@ public class MagnificentChart extends View {
     public void setShadowShowingState(boolean state){
         this.isShadowShowing = state;
         invalidate();
+    }
+
+    public boolean getAnimationState(){
+        return this.isAnimated;
+    }
+
+    public boolean getRound(){
+        return this.isRound;
+    }
+
+    public boolean getShadowShowingState(){
+        return this.isShadowShowing;
     }
 
     public void setTitleShowingState(boolean state){
@@ -261,6 +240,104 @@ public class MagnificentChart extends View {
     private float getPercent(int value, int maxValue){
         float result = (float) value/maxValue;
         return result;
+    }
+
+// #MARK - Drawing Methods
+
+    private void regularDraw(Canvas canvas){
+        Paint insideShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        insideShadowPaint.setColor(shadowBackgroundColor);
+        Paint insideChartPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        insideChartPaint.setColor(chartBackgroundColor);
+        RectF rect = new RectF();
+        rect.set(10, 10, width - 10, height - 10);
+        drawMainCircle(canvas, insideShadowPaint, insideChartPaint, rect);
+        canvas.rotate(-90f, rect.centerX(), rect.centerY());
+
+        if(this.chartItemsList != null && this.maxValue > 0){
+            drawItems(canvas, rect);
+            canvas.rotate(90f, rect.centerX(), rect.centerY());
+            drawInsideCircle(canvas, insideShadowPaint, insideChartPaint);
+        }
+    }
+
+    private void animatedDraw(Canvas canvas){
+        Paint insideShadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        insideShadowPaint.setColor(shadowBackgroundColor);
+        Paint insideChartPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        insideChartPaint.setColor(chartBackgroundColor);
+        RectF rect = new RectF();
+        rect.set(10, 10, width - 10, height - 10);
+        drawMainCircle(canvas, insideShadowPaint, insideChartPaint, rect);
+        canvas.rotate(-90f, rect.centerX(), rect.centerY());
+
+        if(chartItemsList != null && maxValue > 0){
+            drawItems(canvas, rect);
+
+            Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            paint.setColor(chartBackgroundColor);
+            RectF oval = new RectF();
+            oval.set(8, 8, width - 8, height - 8);
+            Path path = new Path();
+            path.moveTo(oval.centerX(), oval.centerY());
+            path.addArc(oval, globalCurrentAngle, 360.0f - globalCurrentAngle);
+            path.lineTo(oval.centerX(), oval.centerY());
+
+            canvas.drawPath(path, paint);
+            globalCurrentAngle += animationSpeed; // <-- animation speed
+
+            canvas.rotate(90f, rect.centerX(), rect.centerY());
+            if(!isRound){
+                if(isShadowShowing){
+                    canvas.drawCircle(width/2, height/2, width/4 - 10, insideShadowPaint);
+                }
+                canvas.drawCircle(width/2, height/2, width/4 - 20, insideChartPaint);
+            }
+
+            if(globalCurrentAngle >= 360){
+                globalCurrentAngle = 0.0f;
+                canvas.rotate(-90f, rect.centerX(), rect.centerY());
+                drawItems(canvas, rect);
+                canvas.rotate(90f, rect.centerX(), rect.centerY());
+                drawInsideCircle(canvas, insideShadowPaint, insideChartPaint);
+                return;
+            }
+            invalidate();
+        }
+    }
+
+    private void drawInsideCircle(Canvas canvas, Paint insideShadowPaint, Paint insideChartPaint){
+        if(!isRound){
+            if(isShadowShowing){
+                canvas.drawCircle(width/2, height/2, width/4 - 10, insideShadowPaint);
+            }
+            canvas.drawCircle(width/2, height/2, width/4 - 20, insideChartPaint);
+        }
+    }
+
+    private void drawMainCircle(Canvas canvas, Paint insideShadowPaint, Paint insideChartPaint, RectF mainRectangle){
+        if(isShadowShowing){
+            canvas.drawCircle(width/2, height/2, width/2, insideShadowPaint);
+        }
+        canvas.drawArc(mainRectangle, 0f, 360f, true, insideChartPaint);
+    }
+
+    private void drawItems(Canvas canvas, RectF mainRectangle){
+        float startAngle = 0f;
+        float anglesSum = 0f;
+        Paint currentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        for(int i = 0; i < chartItemsList.size(); ++i){
+            MagnificentChartItem currentItem = chartItemsList.get(i);
+            int color = currentItem.color;
+            String title = currentItem.title;
+            int value = currentItem.value;
+            float currentPercentValue = getPercent(value, maxValue);
+            float currentAngle = currentPercentValue * 360;
+            anglesSum += currentAngle;
+            currentPaint.setColor(color);
+            canvas.drawArc(mainRectangle, startAngle, currentAngle, true, currentPaint);
+            startAngle += currentAngle;
+        }
     }
 
 }
