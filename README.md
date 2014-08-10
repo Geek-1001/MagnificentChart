@@ -2,6 +2,8 @@
 
 Simple open source Android library for round charts.
 
+<img src="https://www.dropbox.com/s/zkk8s3uq0ht0f1j/Untitled.gif?dl=1" height="60%" width="60%">
+
 <img src="https://www.dropbox.com/s/53uiojut8bf6m0q/magnificent_chart_1.png?dl=1" height="60%" width="60%">
 
 ##Usage:
